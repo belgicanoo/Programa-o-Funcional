@@ -55,3 +55,33 @@ updateAVE jogo torneio resultados =
     let resultados' = addGameToLastRound jogo resultados
         torneio'    = updateTournamentStats jogo resultados' torneio
     in (torneio', resultados')
+
+updateElim :: String -> String -> EstruturaResultadosElim -> EstruturaResultadosElim
+updateElim gameId winnerName results =
+    let 
+        resultsWithWinner = updateGameResult gameId winnerName results
+        resultsFinal = advanceWinnerToNextRounds gameId winnerName resultsWithWinner
+    in 
+        resultsFinal
+
+updateGameResult :: String -> String -> EstruturaResultadosElim -> EstruturaResultadosElim
+updateGameResult gameId winnerName = map (map (updateSingleGame gameId winnerName))
+    where
+        updateSingleGame :: String -> String -> JogoElim -> JogoElim
+        updateSingleGame targetId newWinner (id, players, Nothing)
+            | id == targetId = (id, players, Just newWinner)
+        updateSingleGame _ _ jogo = jogo
+
+advanceWinnerToNextRounds :: String -> String -> EstruturaResultadosElim -> EstruturaResultadosElim
+advanceWinnerToNextRounds gameId winnerName rounds = 
+    let 
+        placeholder = "Vencedor " ++ gameId
+    in map (map (updateGamePlayers placeholder winnerName)) rounds
+
+    where
+        updateGamePlayers :: String -> String -> JogoElim -> JogoElim
+        updateGamePlayers placeholderName newWinner (id, (p1, p2), winner) =
+            let 
+                p1' = if p1 == placeholderName then newWinner else p1
+                p2' = if p2 == placeholderName then newWinner else p2
+            in (id, (p1', p2'), winner)
