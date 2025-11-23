@@ -60,23 +60,18 @@ buildAVEscoresAVE stats combMatrix =
     calculateAVE :: (PlayerStatsAVE, [String]) -> Double
     calculateAVE ((_, fg, fp, total, _), opponents)
         | total == 0 = 0.0
-        | otherwise = 
-            let oave = calculateOAVE opponents
-                rawAVE = fromIntegral fg / fromIntegral total
-            in rawAVE * oave
+        | otherwise = fromIntegral fg / fromIntegral total
 
 recalculateAllAVE :: EstruturaResultadosAVE -> EstruturaTorneioAVE -> EstruturaTorneioAVE
-recalculateAllAVE resultados (nome, rondas, stats) =
-    let players      = map (\(n,_,_,_,_) -> n) stats
-        combMatrix   = buildCombinationsAVE resultados players
-        _            = buildGameScoresAVE resultados players
-        aveScores    = buildAVEscoresAVE stats combMatrix 
-        
-        newStats = zipWith
-                    (\(n, fg, fp, t, _) (_, ave) -> (n, fg, fp, t, ave))
-                    stats
-                    aveScores
+recalculateAllAVE _ (nome, rondas, stats) =
+    let 
+        newStats = map updateSingleStatAVE stats
     in (nome, rondas, newStats)
+  where
+    updateSingleStatAVE :: PlayerStatsAVE -> PlayerStatsAVE
+    updateSingleStatAVE (nome, fg, fp, total, _)
+        | total == 0 = (nome, fg, fp, total, 0.0)
+        | otherwise  = (nome, fg, fp, total, fromIntegral fg / fromIntegral total)
 
 updateTournamentStats :: MatchResultAVE -> EstruturaResultadosAVE -> EstruturaTorneioAVE -> EstruturaTorneioAVE
 updateTournamentStats jogo resultados torneio =
