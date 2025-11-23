@@ -1,29 +1,77 @@
 module Update where
+
 import FileRead
 import Pairing
+import Data.List (mapMaybe)
+
+type GameUpdateElim = (String, String)
+
+------------------------------------------
+-- Funções para Torneio AVE (T3.1)
+------------------------------------------
 
 updatePlayerRaw :: MatchResultAVE -> PlayerStatsAVE -> PlayerStatsAVE
 updatePlayerRaw (j1, j2, s1, s2) (nome, fg, fp, total, ave)
     | nome == j1 =
         let fg'    = fg + s1
             fp'    = fp + s2
-            total' = fg' + fp'
+            total' = fg' + fp' 
         in (nome, fg', fp', total', ave)
-
+    
     | nome == j2 =
         let fg'    = fg + s2
             fp'    = fp + s1
-            total' = fg' + fp'
+            total' = fg' + fp' 
         in (nome, fg', fp', total', ave)
-
+        
     | otherwise = (nome, fg, fp, total, ave)
+
+buildCombinationsAVE :: EstruturaResultadosAVE -> [String] -> [[String]]
+buildCombinationsAVE resultados players = 
+    map (\p -> concatMap (findOpponent p) resultados) players
+  where
+    findOpponent :: String -> RoundAVE -> [String]
+    findOpponent p round = mapMaybe (getOpponent p) round
+    
+    getOpponent :: String -> MatchResultAVE -> Maybe String
+    getOpponent p (j1, j2, _, _)
+      | p == j1 = Just j2
+      | p == j2 = Just j1
+      | otherwise = Nothing
+
+buildGameScoresAVE :: EstruturaResultadosAVE -> [String] -> [[(String, Double)]]
+buildGameScoresAVE _ players = map (\p -> [(p, 0.0)]) players 
+
+buildAVEscoresAVE :: [PlayerStatsAVE] -> [[String]] -> [(String, Double)]
+buildAVEscoresAVE stats combMatrix = 
+    zip (map (\(n,_,_,_,_) -> n) stats) (map calculateAVE (zip stats combMatrix))
+  where
+    getOpponentAVE :: String -> Double
+    getOpponentAVE pName = case filter (\(n,_,_,_,_) -> n == pName) stats of
+                                ((_, _, _, _, ave):_) -> ave
+                                []                    -> 0.0
+    
+    calculateOAVE :: [String] -> Double
+    calculateOAVE [] = 1.0
+    calculateOAVE opponents = 
+        let opponentAVEs = map getOpponentAVE opponents
+        in sum opponentAVEs / fromIntegral (length opponentAVEs)
+    
+    calculateAVE :: (PlayerStatsAVE, [String]) -> Double
+    calculateAVE ((_, fg, fp, total, _), opponents)
+        | total == 0 = 0.0
+        | otherwise = 
+            let oave = calculateOAVE opponents
+                rawAVE = fromIntegral fg / fromIntegral total
+            in rawAVE * oave
 
 recalculateAllAVE :: EstruturaResultadosAVE -> EstruturaTorneioAVE -> EstruturaTorneioAVE
 recalculateAllAVE resultados (nome, rondas, stats) =
     let players      = map (\(n,_,_,_,_) -> n) stats
         combMatrix   = buildCombinationsAVE resultados players
-        gScores      = buildGameScoresAVE  resultados players
-        aveScores    = buildAVEscoresAVE   combMatrix gScores
+        _            = buildGameScoresAVE resultados players
+        aveScores    = buildAVEscoresAVE stats combMatrix 
+        
         newStats = zipWith
                     (\(n, fg, fp, t, _) (_, ave) -> (n, fg, fp, t, ave))
                     stats
@@ -41,13 +89,13 @@ updateFGFP jogo (nome, rondas, stats) =
     in (nome, rondas, stats')
 
 addGameToLastRound :: MatchResultAVE -> EstruturaResultadosAVE -> EstruturaResultadosAVE
-addGameToLastRound jogo [] = [[jogo]]   
+addGameToLastRound jogo [] = [[jogo]]    
 addGameToLastRound jogo rs =
     let initRondas = init rs
         lastRonda  = last rs
     in initRondas ++ [lastRonda ++ [jogo]]
 
-updateAVE :: MatchResultAVE
+updateAVE :: MatchResultAVE 
           -> EstruturaTorneioAVE
           -> EstruturaResultadosAVE
           -> (EstruturaTorneioAVE, EstruturaResultadosAVE)
@@ -56,13 +104,23 @@ updateAVE jogo torneio resultados =
         torneio'    = updateTournamentStats jogo resultados' torneio
     in (torneio', resultados')
 
-updateElim :: String -> String -> EstruturaResultadosElim -> EstruturaResultadosElim
-updateElim gameId winnerName results =
+
+------------------------------------------
+-- Funções para Torneio Eliminatórias (T3.2)
+------------------------------------------
+
+updateElim :: String 
+           -> String 
+           -> EstruturaTorneioElim
+           -> EstruturaResultadosElim 
+           -> (EstruturaTorneioElim, EstruturaResultadosElim)
+updateElim gameId winnerName torneio results =
     let 
         resultsWithWinner = updateGameResult gameId winnerName results
         resultsFinal = advanceWinnerToNextRounds gameId winnerName resultsWithWinner
     in 
-        resultsFinal
+        (torneio, resultsFinal)
+
 
 updateGameResult :: String -> String -> EstruturaResultadosElim -> EstruturaResultadosElim
 updateGameResult gameId winnerName = map (map (updateSingleGame gameId winnerName))
