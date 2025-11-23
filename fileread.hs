@@ -165,8 +165,8 @@ printResultadosTorneioAVE rondas = do
     formatJogo (j1, j2, s1, s2) =
         "  " ++ padL 12 j1 ++ " " ++ show s1 ++ " vs " ++ show s2 ++ " " ++ padR 12 j2
 
-printTorneioElim :: String -> EstruturaTorneioElim -> IO ()
-printTorneioElim _ (nome, equipas) = do
+printTorneioElim :: EstruturaTorneioElim -> IO ()
+printTorneioElim  (nome, equipas) = do
     putStrLn $ "--- Torneio Eliminatórias: " ++ nome ++ " ---"
     putStrLn ""
     putStrLn $ "Equipas Participantes (" ++ show (length equipas) ++ "):"
