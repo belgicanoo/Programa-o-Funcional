@@ -2,13 +2,12 @@ module Update where
 
 import FileRead
 import Pairing
-import Data.List (mapMaybe)
+import Data.Maybe (mapMaybe)
 
 type GameUpdateElim = (String, String)
 
-------------------------------------------
 -- Funções para Torneio AVE (T3.1)
-------------------------------------------
+
 
 updatePlayerRaw :: MatchResultAVE -> PlayerStatsAVE -> PlayerStatsAVE
 updatePlayerRaw (j1, j2, s1, s2) (nome, fg, fp, total, ave)
@@ -100,9 +99,9 @@ updateAVE jogo torneio resultados =
     in (torneio', resultados')
 
 
-------------------------------------------
+
 -- Funções para Torneio Eliminatórias (T3.2)
-------------------------------------------
+
 
 updateElim :: String 
            -> String 
