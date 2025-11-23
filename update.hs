@@ -7,13 +7,13 @@ updatePlayerRaw (j1, j2, s1, s2) (nome, fg, fp, total, ave)
     | nome == j1 =
         let fg'    = fg + s1
             fp'    = fp + s2
-            total' = fg' - fp'
+            total' = fg' + fp'
         in (nome, fg', fp', total', ave)
 
     | nome == j2 =
         let fg'    = fg + s2
             fp'    = fp + s1
-            total' = fg' - fp'
+            total' = fg' + fp'
         in (nome, fg', fp', total', ave)
 
     | otherwise = (nome, fg, fp, total, ave)
