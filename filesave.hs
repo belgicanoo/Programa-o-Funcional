@@ -67,3 +67,68 @@ saveResultadosTorneioAVE filename rondas = do
     formatMatchResult :: MatchResultAVE -> String
     formatMatchResult (j1, j2, s1, s2) =
         j1 ++ "," ++ j2 ++ "," ++ show s1 ++ "," ++ show s2
+
+{-|
+Tarefa T4.2
+Grava a estrutura de dados de Torneio de Eliminatórias num ficheiro CSV.
+Formato:
+NomeTorneio
+(Linhas vazias para formatação)
+Equipa1
+Equipa2
+...
+
+Utiliza a EstruturaTorneioElim definida em FileRead.hs:
+type EstruturaTorneioElim = (String, [String])
+-}
+saveTorneioElim :: String -> EstruturaTorneioElim -> IO ()
+saveTorneioElim filename (nome, equipas) = do
+    handle <- openFile filename WriteMode
+    
+    -- 1. Gravar o nome do torneio
+    hPutStrLn handle nome
+    
+    -- 2. Gravar linhas vazias de separação (simulando o ficheiro de exemplo)
+    hPutStrLn handle "" 
+    hPutStrLn handle "" 
+    
+    -- 3. Gravar a lista de equipas
+    mapM_ (hPutStrLn handle) equipas
+    
+    hClose handle
+
+{-|
+Tarefa T4.2
+Grava a estrutura de dados de Resultados de Eliminatórias num ficheiro CSV.
+Formato:
+Ronda X
+J1,EquipaA,EquipaB,VencedorA
+J2,EquipaC,EquipaD,VencedorC
+...
+
+Utiliza a EstruturaResultadosElim definida em FileRead.hs:
+type EstruturaResultadosElim = [RondaElim]
+type RondaElim = [JogoElim]
+type JogoElim = (String, (String, String), Maybe String)
+-}
+saveResultadosTorneioElim :: String -> EstruturaResultadosElim -> IO ()
+saveResultadosTorneioElim filename rondas = do
+    handle <- openFile filename WriteMode
+    
+    -- Função auxiliar para formatar e gravar uma ronda
+    let formatAndWriteRonda (i, jogos) = do
+            hPutStrLn handle $ "Ronda " ++ show i
+            mapM_ (hPutStrLn handle . formatJogoElim) jogos
+    
+    -- Gravar cada ronda (RondaElim)
+    mapM_ formatAndWriteRonda (zip [1..] rondas)
+    
+    hClose handle
+  where
+    formatJogoElim :: JogoElim -> String
+    formatJogoElim (idJogo, (eq1, eq2), vencedor) =
+        let vencedorStr = case vencedor of
+                            Just v -> v
+                            -- Deixa em branco se o vencedor for Nothing
+                            Nothing -> ""
+        in idJogo ++ "," ++ eq1 ++ "," ++ eq2 ++ "," ++ vencedorStr
